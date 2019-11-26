@@ -10,7 +10,6 @@ def period_into_range(period_list):
 def read_courses(html_filename, language):
     with open(html_filename) as courses_file:
         soup = BeautifulSoup(courses_file.read(), "html.parser")
-        # 3,4 period data : 'courses.html'
         courses = []
         for x in soup.findAll("tr", {"role": "row"}):
             children = x.findChildren('td')
@@ -32,9 +31,11 @@ en_courses = read_courses('courses_1_2.html', 'en') + read_courses('courses_3_4.
 all_courses = []
 for i in range(1,21):
     all_courses += read_courses(f'all_courses{i}.html', 'fi')
+
 en_course_code = list(map(lambda d: d['course_code'], en_courses))
 fi_courses = [x for x in all_courses if x["course_code"] not in en_course_code]
 all_courses = en_courses + fi_courses
+all_courses = list({v['course_code']:v for v in all_courses}.values())
 
 with open ("courses.json", 'w') as courses_out:
     json.dump(all_courses, courses_out)
