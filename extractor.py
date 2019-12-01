@@ -1,11 +1,16 @@
+#!/usr/bin/env python3.7
+
 from bs4 import BeautifulSoup
 import json
+from os import listdir
+
 
 def period_into_range(period_list):
     if len(period_list) == 2:
         return list(range(int(period_list[0]), int(period_list[1])+1))
     else:
         return [int(x) for x in period_list]
+
 
 def read_courses(html_filename, language):
     with open(html_filename) as courses_file:
@@ -21,21 +26,40 @@ def read_courses(html_filename, language):
                 periods = [x.strip(" ") for x in children[3].contents[0].strip("\n\t").split("-")]
                 periods = ['5' if x == "Kesä" else x for x in periods]
                 subject = children[4].contents[0].strip("\n\t")
-                course_obj = { 'course_code': course_code, 'implementation_year': implementation_year, 'course_link': course_link, 'credits': course_credit, 'subject': subject,
-                               'course_name': course_name, 'periods': periods, 'language': language }
+                course_obj = {
+                    'course_code': course_code,
+                    'implementation_year': implementation_year,
+                    'course_link': course_link,
+                    'credits': course_credit,
+                    'subject': subject,
+                    'course_name': course_name,
+                    'periods': periods,
+                    'language': language
+                }
                 courses.append(course_obj)
         return courses
 
 
-en_courses = read_courses('courses_1_2.html', 'en') + read_courses('courses_3_4.html', 'en') + read_courses('courses_summer.html', 'en')
-all_courses = []
-for i in range(1,21):
-    all_courses += read_courses(f'all_courses{i}.html', 'fi')
+def main():
+    en_htmls = listdir('en')
+    en_courses = []
+    for html in en_htmls:
+        en_courses += read_courses(f'en/{html}', 'en')
 
-en_course_code = list(map(lambda d: d['course_code'], en_courses))
-fi_courses = [x for x in all_courses if x["course_code"] not in en_course_code]
-all_courses = en_courses + fi_courses
-all_courses = list({v['course_code']:v for v in all_courses}.values())
+    en_course_codes = [course["course_code"] for course in en_courses]
 
-with open ("courses.json", 'w') as courses_out:
-    json.dump(all_courses, courses_out)
+    fi_htmls = listdir('fi')
+    fi_courses = []
+    for html in fi_htmls:
+        fi_courses += read_courses(f'fi/{html}', 'fi')
+
+    fi_courses_no_duplicates = [x for x in fi_courses if x["course_code"] not in en_course_codes]
+    all_courses = en_courses + fi_courses_no_duplicates
+    all_courses = list({v['course_code']:v for v in all_courses}.values())
+
+    with open ("courses.json", 'w') as courses_out:
+        json.dump(all_courses, courses_out)
+
+
+if __name__ == "__main__":
+    main()
